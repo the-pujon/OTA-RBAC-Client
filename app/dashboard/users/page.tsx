@@ -1,75 +1,84 @@
 "use client"
 
 import { useState } from "react"
-import { Crown, MoreHorizontal, Shield, User } from "lucide-react"
-import Image from "next/image"
+import { Crown, Shield, User } from "lucide-react"
+// import Image from "next/image"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { useGetUsersQuery } from "@/redux/features/auth/authApi"
+import { useMakeModeratorMutation } from "@/redux/features/moderator/moderatorApi"
+import { useMakeAdminMutation } from "@/redux/features/admin/adminApi"
+import { withAuth } from "@/components/auth/withAuth"
+// import { useAppSelector } from "@/redux/hook"
+// import { useCurrentToken } from "@/redux/features/auth/authSlice"
+import { parseJwt } from "@/utils/isTokenExpired"
+import { getAuthCookie } from "@/utils/cookies"
 
 interface User {
-  id: string
+  _id: string
   name: string
   email: string
   avatar: string
-  role: "User" | "Moderator" | "Admin"
+  role: "user" | "moderator" | "admin" | "superAdmin"
   status: "Active" | "Inactive"
-  joinedDate: string
-  lastActive: string
+  createdAt: string
+  // lastActive: string
 }
 
 // This would typically come from your API/database
-const users: User[] = [
-  {
-    id: "1",
-    name: "Alex Johnson",
-    email: "alex@example.com",
-    avatar: "/placeholder.svg",
-    role: "Admin",
-    status: "Active",
-    joinedDate: "2024-01-15",
-    lastActive: "2024-02-24",
-  },
-  {
-    id: "2",
-    name: "Sarah Wilson",
-    email: "sarah@example.com",
-    avatar: "/placeholder.svg",
-    role: "Moderator",
-    status: "Active",
-    joinedDate: "2024-01-20",
-    lastActive: "2024-02-23",
-  },
-  {
-    id: "3",
-    name: "Michael Brown",
-    email: "michael@example.com",
-    avatar: "/placeholder.svg",
-    role: "User",
-    status: "Active",
-    joinedDate: "2024-02-01",
-    lastActive: "2024-02-24",
-  },
-]
+// const users: User[] = [
+//   {
+//     id: "1",
+//     name: "Alex Johnson",
+//     email: "alex@example.com",
+//     avatar: "/placeholder.svg",
+//     role: "Admin",
+//     status: "Active",
+//     joinedDate: "2024-01-15",
+//     lastActive: "2024-02-24",
+//   },
+//   {
+//     id: "2",
+//     name: "Sarah Wilson",
+//     email: "sarah@example.com",
+//     avatar: "/placeholder.svg",
+//     role: "Moderator",
+//     status: "Active",
+//     joinedDate: "2024-01-20",
+//     lastActive: "2024-02-23",
+//   },
+//   {
+//     id: "3",
+//     name: "Michael Brown",
+//     email: "michael@example.com",
+//     avatar: "/placeholder.svg",
+//     role: "User",
+//     status: "Active",
+//     joinedDate: "2024-02-01",
+//     lastActive: "2024-02-24",
+//   },
+// ]
 
-export default function UsersPage() {
+function UsersPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [roleFilter, setRoleFilter] = useState<string>("all")
-  const [selectedUser, setSelectedUser] = useState<User | null>(null)
-  const [isChangeRoleDialogOpen, setIsChangeRoleDialogOpen] = useState(false)
-  const [newRole, setNewRole] = useState<string>("")
+  const [makeModerator] = useMakeModeratorMutation()
+  const [makeAdmin] = useMakeAdminMutation()
+  // console.log(admin)
+  const token = getAuthCookie();
+
+  const role = parseJwt(token as string).role;
+  console.log(role)
+
+ 
+  const {data: userData} = useGetUsersQuery({})
+  const users: User[] = userData?.data || []
+
+  console.log(users)
 
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
@@ -78,19 +87,16 @@ export default function UsersPage() {
     const matchesRole = roleFilter === "all" || user.role.toLowerCase() === roleFilter
     return matchesSearch && matchesRole
   })
-
-  const handleRoleChange = (userId: string, newRole: string) => {
-    // Here you would typically make an API call to update the user's role
-    console.log(`Changing user ${userId} role to ${newRole}`)
-    setIsChangeRoleDialogOpen(false)
-  }
+ 
 
   const getRoleIcon = (role: string) => {
     switch (role) {
-      case "Admin":
+      case "admin":
         return <Crown className="h-4 w-4 text-primary" />
-      case "Moderator":
+      case "moderator":
         return <Shield className="h-4 w-4 text-blue-500" />
+      case "superAdmin":
+        return <div className="flex items-center justify-center"><Crown className="h-4 w-4 text-primary" /><Crown className="h-4 w-4 text-primary" /></div>
       default:
         return <User className="h-4 w-4 text-muted-foreground" />
     }
@@ -104,18 +110,18 @@ export default function UsersPage() {
     },
     {
       title: "Admins",
-      value: users.filter((u) => u.role === "Admin").length,
+      value: users.filter((u) => u.role === "admin").length,
       icon: Crown,
     },
     {
       title: "Moderators",
-      value: users.filter((u) => u.role === "Moderator").length,
+      value: users.filter((u) => u.role === "moderator").length,
       icon: Shield,
     },
   ]
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" suppressHydrationWarning={true}>
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Users Management</h1>
         <p className="text-muted-foreground">Manage users and their roles across the platform.</p>
@@ -173,25 +179,15 @@ export default function UsersPage() {
                   <TableHead>Role</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Joined Date</TableHead>
-                  <TableHead>Last Active</TableHead>
+                  {/* <TableHead>Last Active</TableHead> */}
                   <TableHead className="w-[100px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredUsers.map((user) => (
-                  <TableRow key={user.id}>
+                  <TableRow key={user._id}>
                     <TableCell>
                       <div className="flex items-center gap-4">
-                        <div className="relative">
-                          <Image
-                            src={user.avatar || "/placeholder.svg"}
-                            alt={user.name}
-                            width={32}
-                            height={32}
-                            className="rounded-full"
-                          />
-                          <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-background bg-green-500" />
-                        </div>
                         <div>
                           <div className="font-medium">{user.name}</div>
                           <div className="text-sm text-muted-foreground">{user.email}</div>
@@ -213,29 +209,25 @@ export default function UsersPage() {
                         {user.status}
                       </span>
                     </TableCell>
-                    <TableCell>{new Date(user.joinedDate).toLocaleDateString()}</TableCell>
-                    <TableCell>{new Date(user.lastActive).toLocaleDateString()}</TableCell>
+                    <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
+                    {/* <TableCell>{new Date(user.lastActive).toLocaleDateString()}</TableCell> */}
                     <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="hover:bg-primary/10">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Actions</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setSelectedUser(user)
-                              setNewRole(user.role)
-                              setIsChangeRoleDialogOpen(true)
-                            }}
-                          >
-                            <Shield className="mr-2 h-4 w-4" />
-                            Change Role
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                     <div className="flex items-center gap-2">
+                        <Button 
+                        disabled={role === "admin" || role === "moderator" || user.role === "user" || user.role === "superAdmin"}
+                        onClick={()=>
+                          makeAdmin(user._id)
+                            .then(() => alert("User made admin"))
+                            .catch((error) => alert(error.message))
+                        } >Make Admin</Button>
+                        <Button 
+                         disabled={user.role === "superAdmin"}
+                        onClick={()=>
+                          makeModerator(user._id)
+                            .then(() => alert("User made moderator"))
+                            .catch((error) => alert(error.message))
+                        }>Make Moderator</Button>
+                     </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -244,46 +236,8 @@ export default function UsersPage() {
           </div>
         </CardContent>
       </Card>
-
-      <Dialog open={isChangeRoleDialogOpen} onOpenChange={setIsChangeRoleDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Change User Role</DialogTitle>
-            <DialogDescription>
-              Change the role for {selectedUser?.name}. This will modify their permissions across the platform.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Select value={newRole.toLowerCase()} onValueChange={(value) => setNewRole(value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select new role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="moderator">Moderator</SelectItem>
-                  <SelectItem value="user">User</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsChangeRoleDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={() => {
-                if (selectedUser) {
-                  handleRoleChange(selectedUser.id, newRole)
-                }
-              }}
-            >
-              Save Changes
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
 
+export default withAuth(UsersPage,['admin','superAdmin']);

@@ -1,8 +1,15 @@
-import { ArrowUpRight, Eye, Shield, Users } from "lucide-react"
+'use client'
+
+import { ArrowUpRight, Eye, LogIn, LogOut, Shield, Users } from "lucide-react"
 import Link from "next/link"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { signOut } from "@/redux/features/auth/authSlice"
+import { useAppDispatch } from "@/redux/hook"
+import { useRouter } from "next/navigation"
+import { getAuthCookie, removeAuthCookie } from "@/utils/cookies"
+import { isTokenExpired } from "@/utils/isTokenExpired"
 
 // This would typically come from your API/database
 const stats = [
@@ -57,27 +64,44 @@ const recentActivity = [
 ]
 
 export default function DashboardPage() {
+  const dispatch = useAppDispatch();
+    const router = useRouter();
+
+    const token = getAuthCookie();
+
+    const isTokenExpire = isTokenExpired(token)
+
+    console.log(isTokenExpire)
+
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground">Welcome back! Here's what's happening today.</p>
+          <p className="text-muted-foreground">Welcome back! Here&apos;s what&apos;s happening today.</p>
         </div>
-        <div className="flex gap-4">
+        {
+          !token && isTokenExpire ? <div className="flex gap-4">
           <Button asChild variant="outline">
-            <Link href="/dashboard/moderators">
-              <Users className="mr-2 h-4 w-4" />
-              View Team
+            <Link href="/auth/signin">
+              <LogIn className="mr-2 h-4 w-4" />
+              Sign in
             </Link>
           </Button>
-          <Button asChild>
-            <Link href="/dashboard/posts/create">
-              <Eye className="mr-2 h-4 w-4" />
-              New Post
-            </Link>
+        </div>: <div className="flex gap-4">
+          <Button onClick={()=>{
+            dispatch(signOut());
+            removeAuthCookie()
+            router.push('/auth/signin');
+          }} >
+            {/* < href="/dashboard/posts/create"> */}
+              <LogOut className="mr-2 h-4 w-4" />
+              Sign out
+            {/* </> */}
           </Button>
         </div>
+        }
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

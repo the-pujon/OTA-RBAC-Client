@@ -8,6 +8,9 @@ import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { useCreatePostMutation } from "@/redux/features/post/postApi"
+import { useRouter } from "next/navigation"
+import { withAuth } from "@/components/auth/withAuth"
 
 const formSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -15,19 +18,33 @@ const formSchema = z.object({
   tags: z.string().transform((str) => str.split(",").map((tag) => tag.trim())),
 })
 
-export default function CreatePostPage() {
+function CreatePostPage() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
       content: "",
-      tags: "",
+      tags: [""],
     },
   })
+  const [createPost,{data}] = useCreatePostMutation()
+  const router = useRouter()
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  console.log("data", data)
+
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     // Here you would typically send the data to your API
     console.log(values)
+
+    try {
+      const post = await createPost(values).unwrap()
+      if (post) {
+        router.push(`/dashboard/posts`)
+      }
+      // console.log("Post created:", post)
+    } catch (error) {
+      console.error("Error creating post:", error)
+    }
   }
 
   return (
@@ -83,3 +100,4 @@ export default function CreatePostPage() {
   )
 }
 
+export default withAuth(CreatePostPage,['moderator','superAdmin']);

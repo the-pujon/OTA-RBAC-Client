@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { getAuthCookie } from "@/utils/cookies";
 import {
     BaseQueryApi,
     BaseQueryFn,
@@ -6,16 +7,27 @@ import {
     DefinitionType,
     FetchArgs,
     fetchBaseQuery,
+    // RootState,
   } from "@reduxjs/toolkit/query/react";
 //   import { toast } from "sonner";
 import toast from "react-hot-toast";
   
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+const API_URL =  'http://192.168.68.105:4000/api';
 
   const baseQuery = fetchBaseQuery({
     baseUrl: API_URL,
     credentials: "include",
+    prepareHeaders: (headers) => {
+      // const token = (getState() as RootState).auth.token;
+      const token = getAuthCookie();
+
+      console.log(token)
+      if (token) {
+        headers.set("authorization", `Bearer ${token}`);
+      }
+      return headers;
+    },
   });
   
   const baseQueryWithErrorHandling: BaseQueryFn<
@@ -59,7 +71,9 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
     reducerPath: "baseApi",
     baseQuery: baseQueryWithErrorHandling,
     tagTypes: [
-      "visa",
+      "post",
+      "user",
+      "moderator"
     ],
     endpoints: () => ({}),
   });

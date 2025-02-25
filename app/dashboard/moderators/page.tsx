@@ -1,46 +1,19 @@
-import { MoreHorizontal, Shield, Trash, UserPlus } from "lucide-react"
-import Image from "next/image"
-import Link from "next/link"
+"use client"
+
+import { MoreHorizontal, Trash } from "lucide-react"
+// import Link from "next/link"
 
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { useGetModeratorsQuery, useRemoveModeratorMutation } from "@/redux/features/moderator/moderatorApi"
+import { withAuth } from "@/components/auth/withAuth"
 
-// This would typically come from your API/database
-const moderators = [
-  {
-    id: "1",
-    name: "John Doe",
-    email: "john@example.com",
-    avatar: "/placeholder.svg",
-    role: "Senior Moderator",
-    activeStatus: "Active",
-    joinedDate: "Feb 2024",
-    postsModerated: 234,
-  },
-  {
-    id: "2",
-    name: "Jane Smith",
-    email: "jane@example.com",
-    avatar: "/placeholder.svg",
-    role: "Moderator",
-    activeStatus: "Active",
-    joinedDate: "Jan 2024",
-    postsModerated: 156,
-  },
-  {
-    id: "3",
-    name: "Mike Johnson",
-    email: "mike@example.com",
-    avatar: "/placeholder.svg",
-    role: "Junior Moderator",
-    activeStatus: "Inactive",
-    joinedDate: "Dec 2023",
-    postsModerated: 89,
-  },
-]
-
-export default function ModeratorsPage() {
+function ModeratorsPage() {
+  const {data:ModeratedData} = useGetModeratorsQuery({})
+  const [removeModerator] = useRemoveModeratorMutation()
+  const moderators = ModeratedData?.data || []
+  console.log(moderators)
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -48,26 +21,27 @@ export default function ModeratorsPage() {
           <h1 className="text-3xl font-bold">Moderators</h1>
           <p className="text-muted-foreground">Manage your site moderators and their permissions.</p>
         </div>
-        <Button asChild>
+        {/* <Button asChild>
           <Link href="/dashboard/moderators/create">
             <UserPlus className="mr-2 h-4 w-4" />
             Add Moderator
           </Link>
-        </Button>
+        </Button> */}
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {moderators.map((moderator) => (
-          <Card key={moderator.id}>
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+        {moderators.map((moderator: any) => (
+          <Card key={moderator._id}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0">
               <div className="flex items-center space-x-4">
-                <Image
+                {/* <Image
                   src={moderator.avatar || "/placeholder.svg"}
                   alt={moderator.name}
                   className="rounded-full"
                   width={40}
                   height={40}
-                />
+                /> */}
                 <div>
                   <CardTitle className="text-base">{moderator.name}</CardTitle>
                   <CardDescription>{moderator.email}</CardDescription>
@@ -81,18 +55,16 @@ export default function ModeratorsPage() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem>
-                    <Shield className="mr-2 h-4 w-4" />
-                    Change Role
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="text-red-600">
+                  <DropdownMenuItem className="text-red-600" onClick={() => {
+                    removeModerator(moderator._id)
+                  }}>
                     <Trash className="mr-2 h-4 w-4" />
                     Remove
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </CardHeader>
-            <CardContent>
+            {/* <CardContent>
               <div className="flex flex-col space-y-2">
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">Role</span>
@@ -119,7 +91,7 @@ export default function ModeratorsPage() {
                   <span className="text-sm">{moderator.postsModerated.toLocaleString()}</span>
                 </div>
               </div>
-            </CardContent>
+            </CardContent> */}
           </Card>
         ))}
       </div>
@@ -127,3 +99,4 @@ export default function ModeratorsPage() {
   )
 }
 
+export default withAuth(ModeratorsPage,['admin','superAdmin']);
