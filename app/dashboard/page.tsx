@@ -9,7 +9,7 @@ import { signOut } from "@/redux/features/auth/authSlice"
 import { useAppDispatch } from "@/redux/hook"
 import { useRouter } from "next/navigation"
 import { getAuthCookie, removeAuthCookie } from "@/utils/cookies"
-import { isTokenExpired } from "@/utils/isTokenExpired"
+import { isTokenExpired, parseJwt } from "@/utils/isTokenExpired"
 
 // This would typically come from your API/database
 const stats = [
@@ -71,6 +71,9 @@ export default function DashboardPage() {
 
     const isTokenExpire = isTokenExpired(token)
 
+     const role = parseJwt(token as string).role;
+      console.log(role)
+
     console.log(isTokenExpire)
 
 
@@ -79,7 +82,7 @@ export default function DashboardPage() {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground">Welcome back! Here&apos;s what&apos;s happening today.</p>
+          <p className="text-muted-foreground">Welcome back! You are logged in as <span className="capitalize font-bold">{role}</span> Here&apos;s what&apos;s happening today.</p>
         </div>
         {
           !token && isTokenExpire ? <div className="flex gap-4">
